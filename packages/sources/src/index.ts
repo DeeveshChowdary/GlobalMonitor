@@ -3,7 +3,7 @@ import { ARXIV_FEEDS, DEFAULT_GITHUB_RELEASE_REPOS } from './config';
 import { fetchCoinPriceSeries } from './adapters/coingecko';
 import { fetchFredSeries } from './adapters/fred';
 import { fetchFeedEvents } from './adapters/rss';
-import { cutoffIso, timeRangeToDays } from './time';
+import { cutoffIso } from './time';
 import { groupByDay } from '@gm/utils';
 
 export type SourceEnv = {
@@ -11,7 +11,7 @@ export type SourceEnv = {
   GITHUB_RELEASE_REPOS?: string;
 };
 
-const filterByRange = <T extends { timestamp: string }>(items: T[], timeRange: TimeRange) => {
+export const filterByRange = <T extends { timestamp: string }>(items: T[], timeRange: TimeRange) => {
   const cutoff = cutoffIso(timeRange);
   return items.filter((item) => item.timestamp >= cutoff);
 };
@@ -43,7 +43,7 @@ const createCountSeries = (
   };
 };
 
-export const getFinancialTimeseries = async (timeRange: TimeRange, env: SourceEnv) => {
+export const getFinancialTimeseries = async (env: SourceEnv) => {
   const baseSeries = await Promise.all([
     fetchFredSeries({ seriesId: 'DGS10', metricId: 'us10y', label: 'US 10Y Treasury Yield', unit: '%' }, env.FRED_API_KEY),
     fetchFredSeries({ seriesId: 'DGS2', metricId: 'us2y', label: 'US 2Y Treasury Yield', unit: '%' }, env.FRED_API_KEY),
@@ -77,10 +77,7 @@ export const getFinancialTimeseries = async (timeRange: TimeRange, env: SourceEn
     tags: ['macro', 'yield-curve']
   };
 
-  return [...baseSeries, spreadSeries].map((series) => ({
-    ...series,
-    points: filterByRange(series.points, timeRange)
-  }));
+  return [...baseSeries, spreadSeries];
 };
 
 export const getFinancialEvents = async (timeRange: TimeRange): Promise<Event[]> => {
@@ -132,8 +129,7 @@ export const getAiTechEvents = async (timeRange: TimeRange, env: SourceEnv): Pro
   return filterByRange(merged, timeRange);
 };
 
-export const getAiTechTimeseries = async (timeRange: TimeRange, env: SourceEnv): Promise<Timeseries[]> => {
-  const events = await getAiTechEvents(timeRange, env);
+export const getAiTechTimeseriesFromEvents = (events: Event[]): Timeseries[] => {
   const arxivEvents = events.filter((event) => event.source.startsWith('arXiv'));
   const releaseEvents = events.filter((event) => event.source.startsWith('GitHub'));
 
@@ -143,26 +139,29 @@ export const getAiTechTimeseries = async (timeRange: TimeRange, env: SourceEnv):
   ];
 };
 
-export const getCapitalFlowTimeseries = async (timeRange: TimeRange): Promise<Timeseries[]> => {
-  const days = Math.max(30, timeRangeToDays(timeRange));
-  const series = await Promise.all([
-    fetchCoinPriceSeries('bitcoin', 'btc-price', 'BTC Price', days),
-    fetchCoinPriceSeries('ethereum', 'eth-price', 'ETH Price', days),
-    fetchCoinPriceSeries('tether', 'usdt-market-cap', 'USDT Market Cap', days, true),
-    fetchCoinPriceSeries('usd-coin', 'usdc-market-cap', 'USDC Market Cap', days, true)
-  ]);
-
-  return series.map((item) => ({
-    ...item,
-    points: filterByRange(item.points, timeRange)
-  }));
+export const getAiTechTimeseries = async (timeRange: TimeRange, env: SourceEnv): Promise<Timeseries[]> => {
+  const events = await getAiTechEvents(timeRange, env);
+  return getAiTechTimeseriesFromEvents(events);
 };
 
-export const getCapitalFlowEvents = async (timeRange: TimeRange): Promise<Event[]> => {
-  const series = await getCapitalFlowTimeseries(timeRange);
+export const getCapitalFlowTimeseries = async (lookbackDays = 365): Promise<Timeseries[]> => {
+  return Promise.all([
+    fetchCoinPriceSeries('bitcoin', 'btc-price', 'BTC Price', lookbackDays),
+    fetchCoinPriceSeries('ethereum', 'eth-price', 'ETH Price', lookbackDays),
+    fetchCoinPriceSeries('tether', 'usdt-market-cap', 'USDT Market Cap', lookbackDays, true),
+    fetchCoinPriceSeries('usd-coin', 'usdc-market-cap', 'USDC Market Cap', lookbackDays, true)
+  ]);
+};
+
+export const getCapitalFlowEvents = async (
+  timeRange: TimeRange,
+  inputSeries?: Timeseries[]
+): Promise<Event[]> => {
+  const series = inputSeries ?? (await getCapitalFlowTimeseries());
+  const ranged = series.map((metric) => ({ ...metric, points: filterByRange(metric.points, timeRange) }));
   const events: Event[] = [];
 
-  for (const metric of series) {
+  for (const metric of ranged) {
     if (metric.points.length < 2) {
       continue;
     }

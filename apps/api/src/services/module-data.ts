@@ -9,9 +9,10 @@ import {
 } from '@gm/schema';
 import {
   getAiTechEvents,
-  getAiTechTimeseries,
+  getAiTechTimeseriesFromEvents,
   getCapitalFlowEvents,
   getCapitalFlowTimeseries,
+  filterByRange,
   getFinancialEvents,
   getFinancialTimeseries,
   type SourceEnv
@@ -203,6 +204,12 @@ const deriveCapitalTimeseries = (series: Timeseries[]) => {
   return [...series, ...derived];
 };
 
+const filterTimeseriesByRange = (series: Timeseries[], timeRange: TimeRange) =>
+  series.map((metric) => ({
+    ...metric,
+    points: filterByRange(metric.points, timeRange)
+  }));
+
 const buildSignals = (module: Exclude<ModuleId, 'global-risk'>, timeseries: Timeseries[]) => {
   const configs = metricSignalConfigs[module];
   const byMetric = Object.fromEntries(timeseries.map((series) => [series.metricId, series]));
@@ -259,39 +266,47 @@ const blendGlobalTimeseries = (moduleSeries: Timeseries[]) => {
 
 export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, env: SourceEnv) => {
   if (module === 'financial-stress') {
-    const timeseries = await getFinancialTimeseries(timeRange, env);
+    const fullTimeseries = await getFinancialTimeseries(env);
     const events = await getFinancialEvents(timeRange);
-    const signals = buildSignals('financial-stress', timeseries);
+    const signals = buildSignals('financial-stress', fullTimeseries);
+    const timeseries = filterTimeseriesByRange(fullTimeseries, timeRange);
     return { timeseries, events, signals };
   }
 
   if (module === 'capital-flows') {
-    const base = await getCapitalFlowTimeseries(timeRange);
+    const base = await getCapitalFlowTimeseries(365);
     const timeseries = deriveCapitalTimeseries(base);
-    const events = await getCapitalFlowEvents(timeRange);
+    const events = await getCapitalFlowEvents(timeRange, timeseries);
     const signals = buildSignals('capital-flows', timeseries);
-    return { timeseries, events, signals };
+    const ranged = filterTimeseriesByRange(timeseries, timeRange);
+    return { timeseries: ranged, events, signals };
   }
 
   if (module === 'ai-tech') {
-    const [events, timeseries] = await Promise.all([
-      getAiTechEvents(timeRange, env),
-      getAiTechTimeseries(timeRange, env)
-    ]);
-    const signals = buildSignals('ai-tech', timeseries);
+    const fullEvents = await getAiTechEvents('90d', env);
+    const fullTimeseries = getAiTechTimeseriesFromEvents(fullEvents);
+    const signals = buildSignals('ai-tech', fullTimeseries);
+    const events = filterByRange(fullEvents, timeRange);
+    const timeseries = filterTimeseriesByRange(fullTimeseries, timeRange);
     return { timeseries, events, signals };
   }
 
-  const [financial, capital, aiTech] = await Promise.all([
-    getModulePayload('financial-stress', timeRange, env),
-    getModulePayload('capital-flows', timeRange, env),
-    getModulePayload('ai-tech', timeRange, env)
+  const [financialFull, capitalBase, aiEventsFull] = await Promise.all([
+    getFinancialTimeseries(env),
+    getCapitalFlowTimeseries(365),
+    getAiTechEvents('90d', env)
   ]);
+  const capitalFull = deriveCapitalTimeseries(capitalBase);
+  const aiFull = getAiTechTimeseriesFromEvents(aiEventsFull);
+
+  const financialSignals = buildSignals('financial-stress', financialFull);
+  const capitalSignals = buildSignals('capital-flows', capitalFull);
+  const aiSignals = buildSignals('ai-tech', aiFull);
 
   const blend = globalRiskBlend([
-    { module: 'financial-stress', signals: financial.signals },
-    { module: 'capital-flows', signals: capital.signals },
-    { module: 'ai-tech', signals: aiTech.signals }
+    { module: 'financial-stress', signals: financialSignals },
+    { module: 'capital-flows', signals: capitalSignals },
+    { module: 'ai-tech', signals: aiSignals }
   ]);
 
   const globalSignal: Signal = {
@@ -324,10 +339,16 @@ export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, e
     description: `${signal.description} (source module: ${signal.module})`
   }));
 
+  const [financialEvents, capitalEvents] = await Promise.all([
+    getFinancialEvents(timeRange),
+    getCapitalFlowEvents(timeRange, capitalFull)
+  ]);
+  const aiEvents = filterByRange(aiEventsFull, timeRange);
+
   const events = rankGlobalEvents([
-    ...financial.events,
-    ...capital.events,
-    ...aiTech.events,
+    ...financialEvents,
+    ...capitalEvents,
+    ...aiEvents,
     ...topSignals.slice(0, 5).map((signal, index) => ({
       id: `global-risk:change:${index}:${signal.id}`,
       module: 'global-risk' as const,
@@ -342,12 +363,12 @@ export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, e
   ]);
 
   const moduleSeries = [
-    ...financial.timeseries.filter((series) => ['yield-spread', 'cpi', 'unemployment'].includes(series.metricId)),
-    ...capital.timeseries.filter((series) => ['btc-price', 'stablecoin-total-market-cap'].includes(series.metricId)),
-    ...aiTech.timeseries
+    ...financialFull.filter((series) => ['yield-spread', 'cpi', 'unemployment'].includes(series.metricId)),
+    ...capitalFull.filter((series) => ['btc-price', 'stablecoin-total-market-cap'].includes(series.metricId)),
+    ...aiFull
   ];
 
-  const timeseries = [blendGlobalTimeseries(moduleSeries)];
+  const timeseries = filterTimeseriesByRange([blendGlobalTimeseries(moduleSeries)], timeRange);
 
   return { timeseries, events, signals: rankSignals([globalSignal, ...topSignals]) };
 };
