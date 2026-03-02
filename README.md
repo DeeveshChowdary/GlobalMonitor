@@ -190,6 +190,12 @@ pnpm --filter @gm/web build
 2. Deploy `apps/web/dist` via Cloudflare Pages.
 3. Set `VITE_API_BASE_URL` equivalent approach if you host API on a custom domain (or keep relative `/api` through routing/proxy).
 
+### Live Deployment URLs
+
+- API (Workers): `https://global-monitor-api.globalmonitor-deevesh.workers.dev`
+- Web (Pages): `https://global-monitor-web.pages.dev`
+- Latest Pages deployment: `https://6c85b09a.global-monitor-web.pages.dev`
+
 ## Environment Variables
 
 See [`.env.example`](/Users/deeveshchowdary/Desktop/github_projects/GlobalMonitor/GlobalMonitor/.env.example).
@@ -233,6 +239,10 @@ Screenshots captured from local runtime:
 ![Financial Stress](docs/screenshots/dashboard-financial-stress.png)
 ![Capital Flows](docs/screenshots/dashboard-capital-flows.png)
 ![AI and Tech](docs/screenshots/dashboard-ai-tech.png)
+
+Live deployment screenshot:
+
+![Deployed Global Risk](docs/screenshots/deployed-global-risk.png)
 
 ## Troubleshooting
 

@@ -9,7 +9,7 @@ Status legend:
 - `[x]` done
 - `[-]` blocked (external dependency/environment)
 
-Overall remaining scope: **3 tasks**
+Overall remaining scope: **0 tasks**
 
 ## 1) Environment and Tooling Validation
 
@@ -64,10 +64,10 @@ Overall remaining scope: **3 tasks**
 ## 6) Deployment Rehearsal
 
 - [x] Dry-run Cloudflare Worker deployment with Wrangler.
-- [-] Confirm production API URL works for all endpoints. (blocked: Cloudflare auth required; `wrangler whoami` shows not authenticated)
+- [x] Confirm production API URL works for all endpoints.
 - [x] Build web for production and verify API base URL wiring with `VITE_API_BASE_URL`.
-- [-] Deploy web (Cloudflare Pages or equivalent free host) and verify live app end-to-end. (blocked: Cloudflare auth required)
-- [-] Document final deployed URLs in README. (blocked: waiting for successful deploy + live URLs)
+- [x] Deploy web (Cloudflare Pages or equivalent free host) and verify live app end-to-end.
+- [x] Document final deployed URLs in README.
 
 ## 7) Docs and Handoff Completion
 
