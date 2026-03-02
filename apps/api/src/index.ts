@@ -107,7 +107,13 @@ app.get('/api/timeseries', async (c) => {
       key,
       2 * 60 * 1000,
       10 * 60 * 1000,
-      () => buildTimeseriesResponse(parsed.module as ModuleId, parsed.timeRange as TimeRange, metric, c.env),
+      () =>
+        buildTimeseriesResponse(
+          parsed.module as ModuleId,
+          parsed.timeRange as TimeRange,
+          metric,
+          c.env
+        ),
       c
     );
 

@@ -15,7 +15,11 @@ const makeContext = (ifNoneMatch?: string) =>
 
 describe('respondJsonWithCache', () => {
   it('adds ETag and Cache-Control headers', () => {
-    const response = respondJsonWithCache(makeContext(), { version: 'v1', generatedAt: '', data: [] }, 'miss');
+    const response = respondJsonWithCache(
+      makeContext(),
+      { version: 'v1', generatedAt: '', data: [] },
+      'miss'
+    );
 
     expect(response.headers.get('ETag')).toBeTruthy();
     expect(response.headers.get('Cache-Control')).toContain('stale-while-revalidate');
@@ -23,7 +27,11 @@ describe('respondJsonWithCache', () => {
   });
 
   it('returns 304 when If-None-Match matches ETag', () => {
-    const first = respondJsonWithCache(makeContext(), { version: 'v1', generatedAt: '', data: [1] }, 'fresh');
+    const first = respondJsonWithCache(
+      makeContext(),
+      { version: 'v1', generatedAt: '', data: [1] },
+      'fresh'
+    );
     const etag = first.headers.get('ETag') ?? '';
 
     const second = respondJsonWithCache(

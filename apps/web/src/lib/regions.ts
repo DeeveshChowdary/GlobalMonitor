@@ -36,7 +36,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'North America' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-168, 12], [-52, 12], [-52, 72], [-168, 72], [-168, 12]]]
+        coordinates: [
+          [
+            [-168, 12],
+            [-52, 12],
+            [-52, 72],
+            [-168, 72],
+            [-168, 12]
+          ]
+        ]
       }
     },
     {
@@ -44,7 +52,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'Europe' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-11, 35], [40, 35], [40, 71], [-11, 71], [-11, 35]]]
+        coordinates: [
+          [
+            [-11, 35],
+            [40, 35],
+            [40, 71],
+            [-11, 71],
+            [-11, 35]
+          ]
+        ]
       }
     },
     {
@@ -52,7 +68,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'Asia' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[40, 5], [150, 5], [150, 64], [40, 64], [40, 5]]]
+        coordinates: [
+          [
+            [40, 5],
+            [150, 5],
+            [150, 64],
+            [40, 64],
+            [40, 5]
+          ]
+        ]
       }
     },
     {
@@ -60,7 +84,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'MENA' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-17, 12], [65, 12], [65, 38], [-17, 38], [-17, 12]]]
+        coordinates: [
+          [
+            [-17, 12],
+            [65, 12],
+            [65, 38],
+            [-17, 38],
+            [-17, 12]
+          ]
+        ]
       }
     },
     {
@@ -68,7 +100,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'Africa' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-20, -35], [52, -35], [52, 37], [-20, 37], [-20, -35]]]
+        coordinates: [
+          [
+            [-20, -35],
+            [52, -35],
+            [52, 37],
+            [-20, 37],
+            [-20, -35]
+          ]
+        ]
       }
     },
     {
@@ -76,7 +116,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'Latin America' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[-120, -56], [-30, -56], [-30, 32], [-120, 32], [-120, -56]]]
+        coordinates: [
+          [
+            [-120, -56],
+            [-30, -56],
+            [-30, 32],
+            [-120, 32],
+            [-120, -56]
+          ]
+        ]
       }
     },
     {
@@ -84,7 +132,15 @@ export const coarseChoroplethGeoJson = {
       properties: { region: 'Oceania' },
       geometry: {
         type: 'Polygon',
-        coordinates: [[[110, -47], [180, -47], [180, 0], [110, 0], [110, -47]]]
+        coordinates: [
+          [
+            [110, -47],
+            [180, -47],
+            [180, 0],
+            [110, 0],
+            [110, -47]
+          ]
+        ]
       }
     }
   ]

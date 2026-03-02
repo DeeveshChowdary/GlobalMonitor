@@ -138,7 +138,10 @@ const toEnvelope = <T>(data: T): ApiEnvelope<T> => ({
 
 const alignByLength = (left: Timeseries, right: Timeseries) => {
   const length = Math.min(left.points.length, right.points.length);
-  return Array.from({ length }, (_, index) => ({ left: left.points[index], right: right.points[index] }));
+  return Array.from({ length }, (_, index) => ({
+    left: left.points[index],
+    right: right.points[index]
+  }));
 };
 
 const deriveCapitalTimeseries = (series: Timeseries[]) => {
@@ -146,10 +149,11 @@ const deriveCapitalTimeseries = (series: Timeseries[]) => {
   const usdt = byMetric['usdt-market-cap'];
   const usdc = byMetric['usdc-market-cap'];
   const btc = byMetric['btc-price'];
+  const hasStablecoinTotal = Boolean(byMetric['stablecoin-total-market-cap']);
 
   const derived: Timeseries[] = [];
 
-  if (usdt && usdc) {
+  if (usdt && usdc && !hasStablecoinTotal) {
     const totalPoints = alignByLength(usdt, usdc).map((pair) => ({
       timestamp: pair.left.timestamp,
       value: pair.left.value + pair.right.value
@@ -250,7 +254,10 @@ const blendGlobalTimeseries = (moduleSeries: Timeseries[]) => {
 
   const points = [...grouped.entries()]
     .sort(([left], [right]) => left.localeCompare(right))
-    .map(([day, scores]) => ({ timestamp: `${day}T00:00:00.000Z`, value: clamp(mean(scores), 0, 100) }));
+    .map(([day, scores]) => ({
+      timestamp: `${day}T00:00:00.000Z`,
+      value: clamp(mean(scores), 0, 100)
+    }));
 
   return {
     id: 'global-risk:global-risk-score',
@@ -264,38 +271,94 @@ const blendGlobalTimeseries = (moduleSeries: Timeseries[]) => {
   } satisfies Timeseries;
 };
 
+const sourceWarningEvent = (module: ModuleId, source: string, error: unknown): Event => ({
+  id: `${module}:warning:${source}:${Date.now()}`,
+  module,
+  title: `${source} source unavailable`,
+  summary: error instanceof Error ? error.message : `Failed to load ${source} source`,
+  timestamp: new Date().toISOString(),
+  source: 'system',
+  tags: ['status', 'degraded'],
+  severity: 20,
+  region: 'Global'
+});
+
 export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, env: SourceEnv) => {
   if (module === 'financial-stress') {
-    const fullTimeseries = await getFinancialTimeseries(env);
-    const events = await getFinancialEvents(timeRange);
+    const warningEvents: Event[] = [];
+    const fullTimeseries = await getFinancialTimeseries(env).catch((error) => {
+      warningEvents.push(sourceWarningEvent('financial-stress', 'FRED', error));
+      return [] as Timeseries[];
+    });
+    const events = [...(await getFinancialEvents(timeRange)), ...warningEvents];
     const signals = buildSignals('financial-stress', fullTimeseries);
     const timeseries = filterTimeseriesByRange(fullTimeseries, timeRange);
     return { timeseries, events, signals };
   }
 
   if (module === 'capital-flows') {
-    const base = await getCapitalFlowTimeseries(365);
+    const warningEvents: Event[] = [];
+    const base = await getCapitalFlowTimeseries(365).catch((error) => {
+      warningEvents.push(sourceWarningEvent('capital-flows', 'CoinGecko', error));
+      return [] as Timeseries[];
+    });
+    if (base.length === 0) {
+      warningEvents.push(
+        sourceWarningEvent('capital-flows', 'CoinGecko', 'No market series available')
+      );
+    }
     const timeseries = deriveCapitalTimeseries(base);
-    const events = await getCapitalFlowEvents(timeRange, timeseries);
+    const events = [
+      ...(await getCapitalFlowEvents(timeRange, timeseries).catch((error) => {
+        warningEvents.push(sourceWarningEvent('capital-flows', 'CoinGecko-events', error));
+        return [] as Event[];
+      })),
+      ...warningEvents
+    ];
     const signals = buildSignals('capital-flows', timeseries);
     const ranged = filterTimeseriesByRange(timeseries, timeRange);
     return { timeseries: ranged, events, signals };
   }
 
   if (module === 'ai-tech') {
-    const fullEvents = await getAiTechEvents('90d', env);
+    const warningEvents: Event[] = [];
+    const fullEvents = await getAiTechEvents('90d', env).catch((error) => {
+      warningEvents.push(sourceWarningEvent('ai-tech', 'arXiv/GitHub feeds', error));
+      return [] as Event[];
+    });
     const fullTimeseries = getAiTechTimeseriesFromEvents(fullEvents);
     const signals = buildSignals('ai-tech', fullTimeseries);
-    const events = filterByRange(fullEvents, timeRange);
+    const events = [...filterByRange(fullEvents, timeRange), ...warningEvents];
     const timeseries = filterTimeseriesByRange(fullTimeseries, timeRange);
     return { timeseries, events, signals };
   }
 
-  const [financialFull, capitalBase, aiEventsFull] = await Promise.all([
+  const [financialResult, capitalResult, aiResult] = await Promise.allSettled([
     getFinancialTimeseries(env),
     getCapitalFlowTimeseries(365),
     getAiTechEvents('90d', env)
   ]);
+  const financialFull =
+    financialResult.status === 'fulfilled' ? financialResult.value : ([] as Timeseries[]);
+  const capitalBase =
+    capitalResult.status === 'fulfilled' ? capitalResult.value : ([] as Timeseries[]);
+  const aiEventsFull = aiResult.status === 'fulfilled' ? aiResult.value : ([] as Event[]);
+
+  const warningEvents: Event[] = [];
+  if (financialResult.status === 'rejected') {
+    warningEvents.push(
+      sourceWarningEvent('global-risk', 'Financial Stress sources', financialResult.reason)
+    );
+  }
+  if (capitalResult.status === 'rejected') {
+    warningEvents.push(
+      sourceWarningEvent('global-risk', 'Capital Flow sources', capitalResult.reason)
+    );
+  }
+  if (aiResult.status === 'rejected') {
+    warningEvents.push(sourceWarningEvent('global-risk', 'AI & Tech sources', aiResult.reason));
+  }
+
   const capitalFull = deriveCapitalTimeseries(capitalBase);
   const aiFull = getAiTechTimeseriesFromEvents(aiEventsFull);
 
@@ -321,7 +384,11 @@ export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, e
       -100,
       100
     ),
-    confidence: clamp(mean(blend.topSignals.slice(0, 8).map((signal) => signal.confidence || 0)), 0, 100),
+    confidence: clamp(
+      mean(blend.topSignals.slice(0, 8).map((signal) => signal.confidence || 0)),
+      0,
+      100
+    ),
     score: blend.score,
     metricIds: ['global-risk-score'],
     relatedEventIds: [],
@@ -349,6 +416,7 @@ export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, e
     ...financialEvents,
     ...capitalEvents,
     ...aiEvents,
+    ...warningEvents,
     ...topSignals.slice(0, 5).map((signal, index) => ({
       id: `global-risk:change:${index}:${signal.id}`,
       module: 'global-risk' as const,
@@ -363,8 +431,12 @@ export const getModulePayload = async (module: ModuleId, timeRange: TimeRange, e
   ]);
 
   const moduleSeries = [
-    ...financialFull.filter((series) => ['yield-spread', 'cpi', 'unemployment'].includes(series.metricId)),
-    ...capitalFull.filter((series) => ['btc-price', 'stablecoin-total-market-cap'].includes(series.metricId)),
+    ...financialFull.filter((series) =>
+      ['yield-spread', 'cpi', 'unemployment'].includes(series.metricId)
+    ),
+    ...capitalFull.filter((series) =>
+      ['btc-price', 'stablecoin-total-market-cap'].includes(series.metricId)
+    ),
     ...aiFull
   ];
 
@@ -387,7 +459,9 @@ const rankGlobalEvents = (events: Event[]) =>
 
 export const validateModuleQuery = (module: string, timeRange: string) => {
   if (!isModuleId(module)) {
-    throw new Error(`Unknown module: ${module}. Valid modules: ${Object.keys(moduleConfigs).join(', ')}`);
+    throw new Error(
+      `Unknown module: ${module}. Valid modules: ${Object.keys(moduleConfigs).join(', ')}`
+    );
   }
 
   if (!isTimeRange(timeRange)) {
@@ -427,7 +501,9 @@ export const buildTimeseriesResponse = async (
   env: SourceEnv
 ): Promise<ApiEnvelope<Timeseries[]>> => {
   const payload = await getModulePayload(module, timeRange, env);
-  const filtered = metric ? payload.timeseries.filter((series) => series.metricId === metric) : payload.timeseries;
+  const filtered = metric
+    ? payload.timeseries.filter((series) => series.metricId === metric)
+    : payload.timeseries;
   const envelope = toEnvelope(filtered);
   return timeseriesResponseSchema.parse(envelope);
 };

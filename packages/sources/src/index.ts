@@ -1,6 +1,8 @@
 import type { Event, TimeRange, Timeseries } from '@gm/schema';
 import { ARXIV_FEEDS, DEFAULT_GITHUB_RELEASE_REPOS } from './config';
+import { fetchBinancePriceSeries } from './adapters/binance';
 import { fetchCoinPriceSeries } from './adapters/coingecko';
+import { fetchDefiLlamaStablecoinTotalSeries } from './adapters/defillama';
 import { fetchFredSeries } from './adapters/fred';
 import { fetchFeedEvents } from './adapters/rss';
 import { cutoffIso } from './time';
@@ -11,7 +13,10 @@ export type SourceEnv = {
   GITHUB_RELEASE_REPOS?: string;
 };
 
-export const filterByRange = <T extends { timestamp: string }>(items: T[], timeRange: TimeRange) => {
+export const filterByRange = <T extends { timestamp: string }>(
+  items: T[],
+  timeRange: TimeRange
+) => {
   const cutoff = cutoffIso(timeRange);
   return items.filter((item) => item.timestamp >= cutoff);
 };
@@ -21,15 +26,24 @@ const createCountSeries = (
   label: string,
   source: string,
   module: 'ai-tech',
-  events: Event[]
+  events: Event[],
+  lookbackDays = 90
 ): Timeseries => {
   const grouped = groupByDay(events);
-  const points = [...grouped.entries()]
-    .sort(([left], [right]) => left.localeCompare(right))
-    .map(([day, values]) => ({
+  const start = new Date(Date.now() - lookbackDays * 24 * 60 * 60 * 1000);
+  start.setUTCHours(0, 0, 0, 0);
+  const end = new Date();
+  end.setUTCHours(0, 0, 0, 0);
+
+  const points: Array<{ timestamp: string; value: number }> = [];
+  for (let cursor = new Date(start); cursor <= end; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
+    const day = cursor.toISOString().slice(0, 10);
+    const count = grouped.get(day)?.length ?? 0;
+    points.push({
       timestamp: `${day}T00:00:00.000Z`,
-      value: values.length
-    }));
+      value: count
+    });
+  }
 
   return {
     id: `${module}:${metricId}`,
@@ -45,11 +59,31 @@ const createCountSeries = (
 
 export const getFinancialTimeseries = async (env: SourceEnv) => {
   const baseSeries = await Promise.all([
-    fetchFredSeries({ seriesId: 'DGS10', metricId: 'us10y', label: 'US 10Y Treasury Yield', unit: '%' }, env.FRED_API_KEY),
-    fetchFredSeries({ seriesId: 'DGS2', metricId: 'us2y', label: 'US 2Y Treasury Yield', unit: '%' }, env.FRED_API_KEY),
-    fetchFredSeries({ seriesId: 'UNRATE', metricId: 'unemployment', label: 'US Unemployment Rate', unit: '%' }, env.FRED_API_KEY),
-    fetchFredSeries({ seriesId: 'CPIAUCSL', metricId: 'cpi', label: 'US CPI Index', unit: 'index' }, env.FRED_API_KEY),
-    fetchFredSeries({ seriesId: 'BAA10Y', metricId: 'credit-spread-proxy', label: 'BAA - 10Y Spread Proxy', unit: '%' }, env.FRED_API_KEY)
+    fetchFredSeries(
+      { seriesId: 'DGS10', metricId: 'us10y', label: 'US 10Y Treasury Yield', unit: '%' },
+      env.FRED_API_KEY
+    ),
+    fetchFredSeries(
+      { seriesId: 'DGS2', metricId: 'us2y', label: 'US 2Y Treasury Yield', unit: '%' },
+      env.FRED_API_KEY
+    ),
+    fetchFredSeries(
+      { seriesId: 'UNRATE', metricId: 'unemployment', label: 'US Unemployment Rate', unit: '%' },
+      env.FRED_API_KEY
+    ),
+    fetchFredSeries(
+      { seriesId: 'CPIAUCSL', metricId: 'cpi', label: 'US CPI Index', unit: 'index' },
+      env.FRED_API_KEY
+    ),
+    fetchFredSeries(
+      {
+        seriesId: 'BAA10Y',
+        metricId: 'credit-spread-proxy',
+        label: 'BAA - 10Y Spread Proxy',
+        unit: '%'
+      },
+      env.FRED_API_KEY
+    )
   ]);
 
   const byMetric = Object.fromEntries(baseSeries.map((series) => [series.metricId, series]));
@@ -109,7 +143,10 @@ export const getAiTechEvents = async (timeRange: TimeRange, env: SourceEnv): Pro
     )
   );
 
-  const repoConfig = env.GITHUB_RELEASE_REPOS?.split(',').map((value) => value.trim()).filter(Boolean) ?? DEFAULT_GITHUB_RELEASE_REPOS;
+  const repoConfig =
+    env.GITHUB_RELEASE_REPOS?.split(',')
+      .map((value) => value.trim())
+      .filter(Boolean) ?? DEFAULT_GITHUB_RELEASE_REPOS;
   const githubEventsByRepo = await Promise.all(
     repoConfig.map((repo) =>
       fetchFeedEvents({
@@ -134,23 +171,85 @@ export const getAiTechTimeseriesFromEvents = (events: Event[]): Timeseries[] => 
   const releaseEvents = events.filter((event) => event.source.startsWith('GitHub'));
 
   return [
-    createCountSeries('arxiv-publication-rate', 'arXiv AI Paper Velocity', 'arXiv RSS', 'ai-tech', arxivEvents),
-    createCountSeries('github-release-rate', 'GitHub Release Velocity', 'GitHub Atom', 'ai-tech', releaseEvents)
+    createCountSeries(
+      'arxiv-publication-rate',
+      'arXiv AI Paper Velocity',
+      'arXiv RSS',
+      'ai-tech',
+      arxivEvents,
+      90
+    ),
+    createCountSeries(
+      'github-release-rate',
+      'GitHub Release Velocity',
+      'GitHub Atom',
+      'ai-tech',
+      releaseEvents,
+      90
+    )
   ];
 };
 
-export const getAiTechTimeseries = async (timeRange: TimeRange, env: SourceEnv): Promise<Timeseries[]> => {
+export const getAiTechTimeseries = async (
+  timeRange: TimeRange,
+  env: SourceEnv
+): Promise<Timeseries[]> => {
   const events = await getAiTechEvents(timeRange, env);
   return getAiTechTimeseriesFromEvents(events);
 };
 
 export const getCapitalFlowTimeseries = async (lookbackDays = 365): Promise<Timeseries[]> => {
-  return Promise.all([
+  const settled = await Promise.allSettled([
     fetchCoinPriceSeries('bitcoin', 'btc-price', 'BTC Price', lookbackDays),
     fetchCoinPriceSeries('ethereum', 'eth-price', 'ETH Price', lookbackDays),
     fetchCoinPriceSeries('tether', 'usdt-market-cap', 'USDT Market Cap', lookbackDays, true),
     fetchCoinPriceSeries('usd-coin', 'usdc-market-cap', 'USDC Market Cap', lookbackDays, true)
   ]);
+
+  const coingeckoSeries = settled
+    .filter((result): result is PromiseFulfilledResult<Timeseries> => result.status === 'fulfilled')
+    .map((result) => result.value);
+
+  const byMetric = new Map(coingeckoSeries.map((series) => [series.metricId, series] as const));
+  const fallbackTasks: Promise<Timeseries>[] = [];
+
+  if (!byMetric.has('btc-price')) {
+    fallbackTasks.push(fetchBinancePriceSeries('BTCUSDT', 'btc-price', 'BTC Price', lookbackDays));
+    fallbackTasks.push(
+      fetchFredSeries(
+        { seriesId: 'CBBTCUSD', metricId: 'btc-price', label: 'BTC Price', unit: 'USD' },
+        undefined,
+        'capital-flows'
+      )
+    );
+  }
+  if (!byMetric.has('eth-price')) {
+    fallbackTasks.push(fetchBinancePriceSeries('ETHUSDT', 'eth-price', 'ETH Price', lookbackDays));
+    fallbackTasks.push(
+      fetchFredSeries(
+        { seriesId: 'CBETHUSD', metricId: 'eth-price', label: 'ETH Price', unit: 'USD' },
+        undefined,
+        'capital-flows'
+      )
+    );
+  }
+  if (!byMetric.has('stablecoin-total-market-cap')) {
+    fallbackTasks.push(fetchDefiLlamaStablecoinTotalSeries(lookbackDays));
+  }
+
+  const fallbackSettled = await Promise.allSettled(fallbackTasks);
+  const fallbackSeries = fallbackSettled
+    .filter((result): result is PromiseFulfilledResult<Timeseries> => result.status === 'fulfilled')
+    .map((result) => result.value);
+
+  const mergedByMetric = new Map<string, Timeseries>();
+  for (const series of [...coingeckoSeries, ...fallbackSeries]) {
+    if (!mergedByMetric.has(series.metricId)) {
+      mergedByMetric.set(series.metricId, series);
+    }
+  }
+
+  return [...mergedByMetric.values()];
 };
 
 export const getCapitalFlowEvents = async (
@@ -158,7 +257,10 @@ export const getCapitalFlowEvents = async (
   inputSeries?: Timeseries[]
 ): Promise<Event[]> => {
   const series = inputSeries ?? (await getCapitalFlowTimeseries());
-  const ranged = series.map((metric) => ({ ...metric, points: filterByRange(metric.points, timeRange) }));
+  const ranged = series.map((metric) => ({
+    ...metric,
+    points: filterByRange(metric.points, timeRange)
+  }));
   const events: Event[] = [];
 
   for (const metric of ranged) {

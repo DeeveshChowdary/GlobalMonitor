@@ -39,6 +39,20 @@ const normalizeTimestamp = (candidate: string | undefined) => {
   return Number.isNaN(date.getTime()) ? new Date().toISOString() : date.toISOString();
 };
 
+const asText = (value: unknown) => {
+  if (typeof value === 'string') {
+    return value;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  if (value && typeof value === 'object' && '#text' in value) {
+    const text = (value as { '#text'?: unknown })['#text'];
+    return typeof text === 'string' ? text : '';
+  }
+  return '';
+};
+
 export const fetchFeedEvents = async ({
   module,
   source,
@@ -59,13 +73,20 @@ export const fetchFeedEvents = async ({
 
   const fromRss = rssItems.map((item) => {
     const linkValue =
-      typeof item.link === 'string' ? item.link : typeof item.link?.href === 'string' ? item.link.href : undefined;
+      typeof item.link === 'string'
+        ? item.link
+        : typeof item.link?.href === 'string'
+          ? item.link.href
+          : undefined;
 
     return {
-      id: `${source}:${item.guid ?? linkValue ?? item.title}`,
+      id: `${source}:${asText(item.guid) || linkValue || asText(item.title) || 'untitled'}`,
       module,
-      title: String(item.title ?? 'Untitled Event'),
-      summary: typeof item.description === 'string' ? item.description.replace(/<[^>]+>/g, '').slice(0, 240) : undefined,
+      title: asText(item.title) || 'Untitled Event',
+      summary:
+        typeof item.description === 'string'
+          ? item.description.replace(/<[^>]+>/g, '').slice(0, 240)
+          : undefined,
       url: normalizeUrl(linkValue),
       timestamp: normalizeTimestamp(item.pubDate),
       source,
@@ -84,10 +105,11 @@ export const fetchFeedEvents = async ({
     const summary = typeof entry.summary === 'string' ? entry.summary : entry.summary?.['#text'];
 
     return {
-      id: `${source}:${entry.id ?? primaryLink ?? entry.title}`,
+      id: `${source}:${asText(entry.id) || primaryLink || asText(entry.title) || 'untitled'}`,
       module,
-      title: String(entry.title?.['#text'] ?? entry.title ?? 'Untitled Event'),
-      summary: typeof summary === 'string' ? summary.replace(/<[^>]+>/g, '').slice(0, 240) : undefined,
+      title: asText(entry.title) || 'Untitled Event',
+      summary:
+        typeof summary === 'string' ? summary.replace(/<[^>]+>/g, '').slice(0, 240) : undefined,
       url: normalizeUrl(primaryLink),
       timestamp: normalizeTimestamp(entry.updated ?? entry.published),
       source,

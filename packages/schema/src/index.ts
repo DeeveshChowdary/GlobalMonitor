@@ -131,8 +131,7 @@ export const moduleConfigs: Record<ModuleId, ModuleConfig> = {
   }
 };
 
-export const isModuleId = (value: string): value is ModuleId =>
-  modules.includes(value as ModuleId);
+export const isModuleId = (value: string): value is ModuleId => modules.includes(value as ModuleId);
 
 export const isTimeRange = (value: string): value is TimeRange =>
   timeRanges.includes(value as TimeRange);

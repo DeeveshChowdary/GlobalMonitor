@@ -70,6 +70,9 @@ packages/
 - CoinGecko market data:
   - BTC/ETH prices
   - USDT/USDC market caps (flow proxy)
+- Fallback sources (used only when CoinGecko calls fail):
+  - FRED crypto price series (`CBBTCUSD`, `CBETHUSD`)
+  - DefiLlama stablecoin total circulating USD history
 - Derived proxies:
   - total stablecoin market cap
   - BTC realized volatility proxy
@@ -224,9 +227,12 @@ Unit tests live in [`packages/scoring/src/index.test.ts`](/Users/deeveshchowdary
 
 ## Screenshots
 
-Placeholder folder: [`docs/screenshots`](/Users/deeveshchowdary/Desktop/github_projects/GlobalMonitor/GlobalMonitor/docs/screenshots)
+Screenshots captured from local runtime:
 
-Add screenshots after first local run.
+![Global Risk](docs/screenshots/dashboard-global-risk.png)
+![Financial Stress](docs/screenshots/dashboard-financial-stress.png)
+![Capital Flows](docs/screenshots/dashboard-capital-flows.png)
+![AI and Tech](docs/screenshots/dashboard-ai-tech.png)
 
 ## Troubleshooting
 

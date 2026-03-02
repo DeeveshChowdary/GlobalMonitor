@@ -30,7 +30,12 @@ export const TimeSeriesChart = ({ series }: Props) => {
         <strong>{series.label}</strong>
         <span>{series.source}</span>
       </div>
-      <svg viewBox={`0 0 ${width} ${height}`} className="chart-svg" role="img" aria-label={series.label}>
+      <svg
+        viewBox={`0 0 ${width} ${height}`}
+        className="chart-svg"
+        role="img"
+        aria-label={series.label}
+      >
         <polyline points={points} fill="none" stroke="currentColor" strokeWidth="2.5" />
       </svg>
       <div className="chart-axis">

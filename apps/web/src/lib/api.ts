@@ -18,10 +18,14 @@ const fetchJson = async <T>(url: string): Promise<Envelope<T>> => {
 };
 
 export const loadSignals = (module: string, timeRange: string) =>
-  fetchJson<Signal[]>(`/api/signals?module=${encodeURIComponent(module)}&timeRange=${encodeURIComponent(timeRange)}`);
+  fetchJson<Signal[]>(
+    `/api/signals?module=${encodeURIComponent(module)}&timeRange=${encodeURIComponent(timeRange)}`
+  );
 
 export const loadEvents = (module: string, timeRange: string) =>
-  fetchJson<Event[]>(`/api/events?module=${encodeURIComponent(module)}&timeRange=${encodeURIComponent(timeRange)}`);
+  fetchJson<Event[]>(
+    `/api/events?module=${encodeURIComponent(module)}&timeRange=${encodeURIComponent(timeRange)}`
+  );
 
 export const loadTimeseries = (module: string, timeRange: string, metric?: string) => {
   const params = new URLSearchParams({ module, timeRange });

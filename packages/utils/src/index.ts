@@ -85,6 +85,7 @@ export const createCachedFetcher = <T>(store: CacheStore<T>) => {
             await store.set(key, next);
             return value;
           })
+          .catch(() => current.value)
           .finally(() => {
             inFlight.delete(key);
           });
@@ -142,7 +143,8 @@ export const hashValue = (input: string) => {
   return `W/\"${(hash >>> 0).toString(16)}\"`;
 };
 
-export const clamp = (value: number, min: number, max: number) => Math.max(min, Math.min(max, value));
+export const clamp = (value: number, min: number, max: number) =>
+  Math.max(min, Math.min(max, value));
 
 export const mean = (values: number[]) =>
   values.length === 0 ? 0 : values.reduce((acc, value) => acc + value, 0) / values.length;

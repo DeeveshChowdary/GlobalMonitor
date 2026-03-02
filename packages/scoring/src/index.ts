@@ -98,17 +98,21 @@ export const rankSignals = (signals: Signal[]) =>
 export const globalRiskBlend = (
   inputs: Array<{ module: ModuleId; signals: Signal[] }>
 ): { score: number; breakdown: Record<string, number>; topSignals: Signal[] } => {
-  const weightedModuleScores: Array<{ module: ModuleId; weighted: number }> = inputs.map((entry) => {
-    const top = rankSignals(entry.signals).slice(0, 10);
-    if (top.length === 0) {
-      return { module: entry.module, weighted: 0 };
+  const weightedModuleScores: Array<{ module: ModuleId; weighted: number }> = inputs.map(
+    (entry) => {
+      const top = rankSignals(entry.signals).slice(0, 10);
+      if (top.length === 0) {
+        return { module: entry.module, weighted: 0 };
+      }
+      const avg = mean(top.map((signal) => signal.score));
+      return { module: entry.module, weighted: avg };
     }
-    const avg = mean(top.map((signal) => signal.score));
-    return { module: entry.module, weighted: avg };
-  });
+  );
 
   const score = clamp(mean(weightedModuleScores.map((entry) => entry.weighted)), 0, 100);
-  const breakdown = Object.fromEntries(weightedModuleScores.map((entry) => [entry.module, entry.weighted]));
+  const breakdown = Object.fromEntries(
+    weightedModuleScores.map((entry) => [entry.module, entry.weighted])
+  );
   const topSignals = rankSignals(inputs.flatMap((entry) => entry.signals)).slice(0, 12);
 
   return { score, breakdown, topSignals };

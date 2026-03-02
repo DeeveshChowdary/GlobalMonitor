@@ -16,16 +16,34 @@ const fredApiJsonUrl = (seriesId: string, apiKey: string) =>
 
 const mapCsvRowsToPoints = (rows: Array<Record<string, string>>) =>
   rows
-    .map((row) => ({
-      timestamp: new Date(row.DATE).toISOString(),
-      value: Number.parseFloat(row.VALUE)
-    }))
-    .filter((point) => Number.isFinite(point.value));
+    .map((row) => {
+      const values = Object.values(row);
+      const dateRaw =
+        row.DATE ??
+        row['\ufeffDATE'] ??
+        row.date ??
+        row.observation_date ??
+        row['\ufeffobservation_date'] ??
+        values[0];
+      const valueRaw = row.VALUE ?? row.value ?? values[1];
+      const value = Number.parseFloat(valueRaw ?? '');
+      const date = new Date(dateRaw ?? '');
+
+      if (!Number.isFinite(value) || Number.isNaN(date.getTime())) {
+        return null;
+      }
+
+      return {
+        timestamp: date.toISOString(),
+        value
+      };
+    })
+    .filter((point): point is { timestamp: string; value: number } => Boolean(point));
 
 export const fetchFredSeries = async (
   config: FredSeriesConfig,
   apiKey: string | undefined,
-  module: 'financial-stress' = 'financial-stress'
+  module: 'financial-stress' | 'capital-flows' = 'financial-stress'
 ): Promise<Timeseries> => {
   if (apiKey) {
     const response = await fetchWithTimeout(fredApiJsonUrl(config.seriesId, apiKey), {}, 9000);

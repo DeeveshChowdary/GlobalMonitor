@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
-import { accelerationFromSeries, globalRiskBlend, rollingZScore, signalFromTimeseries, sigmoidSeverity } from './index';
+import {
+  accelerationFromSeries,
+  globalRiskBlend,
+  rollingZScore,
+  signalFromTimeseries,
+  sigmoidSeverity
+} from './index';
 
 describe('rollingZScore', () => {
   it('returns same-length array', () => {
@@ -56,7 +62,7 @@ describe('signal scoring formula', () => {
     );
 
     expect(signal).toBeTruthy();
-    const expected = (signal!.severity * 0.7) + (signal!.acceleration * 0.3);
+    const expected = signal!.severity * 0.7 + signal!.acceleration * 0.3;
     expect(signal!.score).toBeCloseTo(expected, 6);
   });
 });

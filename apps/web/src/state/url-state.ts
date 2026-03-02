@@ -73,9 +73,14 @@ export const serializeUrlStateToSearch = (state: UrlSnapshot) => {
 };
 
 const parseStateFromUrl = (): UrlSnapshot =>
-  parseUrlStateFromSearch(window.location.search);
+  typeof window === 'undefined'
+    ? { ...defaultUrlSnapshot, layers: [...defaultUrlSnapshot.layers] }
+    : parseUrlStateFromSearch(window.location.search);
 
 const serializeState = (state: UrlSnapshot) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
   const search = serializeUrlStateToSearch(state);
   const nextUrl = `${window.location.pathname}?${search}`;
   window.history.replaceState(null, '', nextUrl);

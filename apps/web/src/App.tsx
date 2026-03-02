@@ -86,7 +86,9 @@ function App() {
     }
 
     if (selectedSignal.relatedEventIds.length > 0) {
-      const matchedById = events.filter((event) => selectedSignal.relatedEventIds.includes(event.id));
+      const matchedById = events.filter((event) =>
+        selectedSignal.relatedEventIds.includes(event.id)
+      );
       if (matchedById.length > 0) {
         return matchedById;
       }
@@ -147,7 +149,8 @@ function App() {
             <div className="error">{error}</div>
           ) : signals.length === 0 && events.length === 0 ? (
             <div className="empty">
-              No map overlays available for this module/time range yet. Try a wider range or check source status.
+              No map overlays available for this module/time range yet. Try a wider range or check
+              source status.
             </div>
           ) : (
             <MapPanel
