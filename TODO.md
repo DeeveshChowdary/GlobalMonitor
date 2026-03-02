@@ -9,7 +9,7 @@ Status legend:
 - `[x]` done
 - `[-]` blocked (external dependency/environment)
 
-Overall remaining scope: **4 tasks**
+Overall remaining scope: **3 tasks**
 
 ## 1) Environment and Tooling Validation
 
@@ -79,7 +79,7 @@ Overall remaining scope: **4 tasks**
 
 ## 8) Git Hygiene and Delivery
 
-- [-] Push current commits to remote `main`. (blocked: `Could not resolve host: github.com` in current runtime)
+- [x] Push current commits to remote `main`.
 - [x] Open a PR-style summary in README or CHANGELOG covering architecture and MVP boundaries.
 
 ## Update Rule (tracking commitment)
