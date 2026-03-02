@@ -79,7 +79,7 @@ Overall remaining scope: **4 tasks**
 
 ## 8) Git Hygiene and Delivery
 
-- [-] Push current commits to remote `main`. (blocked: remote access/network required)
+- [-] Push current commits to remote `main`. (blocked: `Could not resolve host: github.com` in current runtime)
 - [x] Open a PR-style summary in README or CHANGELOG covering architecture and MVP boundaries.
 
 ## Update Rule (tracking commitment)
