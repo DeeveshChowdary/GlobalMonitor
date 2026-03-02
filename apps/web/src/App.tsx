@@ -6,7 +6,7 @@ import { MapPanel } from './components/MapPanel';
 import { SignalList } from './components/SignalList';
 import { TopNav } from './components/TopNav';
 import { moduleRegistry } from './config/modules';
-import { resetLayersForModule, useUrlState } from './state/url-state';
+import { useUrlState } from './state/url-state';
 
 const mergeUniqueLayers = (current: string[], layer: string) =>
   current.includes(layer) ? current.filter((value) => value !== layer) : [...current, layer];
@@ -80,6 +80,30 @@ function App() {
     return timeseries.find((series) => series.metricId === primaryMetric) ?? timeseries[0];
   }, [selectedSignal, timeseries]);
 
+  const relatedEvents = useMemo(() => {
+    if (!selectedSignal) {
+      return events;
+    }
+
+    if (selectedSignal.relatedEventIds.length > 0) {
+      const matchedById = events.filter((event) => selectedSignal.relatedEventIds.includes(event.id));
+      if (matchedById.length > 0) {
+        return matchedById;
+      }
+    }
+
+    if (selectedSignal.tags.length > 0) {
+      const matchedByTag = events.filter((event) =>
+        event.tags.some((tag) => selectedSignal.tags.includes(tag))
+      );
+      if (matchedByTag.length > 0) {
+        return matchedByTag;
+      }
+    }
+
+    return events;
+  }, [events, selectedSignal]);
+
   const moduleConfig = moduleRegistry[state.module];
 
   return (
@@ -89,7 +113,6 @@ function App() {
         timeRange={state.timeRange}
         onModuleChange={(module: ModuleId) => {
           state.setState({ module, selectedSignalId: undefined });
-          resetLayersForModule(module);
         }}
         onTimeRangeChange={(timeRange: TimeRange) => state.setState({ timeRange })}
       />
@@ -122,6 +145,10 @@ function App() {
             <div className="loading">Loading module data...</div>
           ) : error ? (
             <div className="error">{error}</div>
+          ) : signals.length === 0 && events.length === 0 ? (
+            <div className="empty">
+              No map overlays available for this module/time range yet. Try a wider range or check source status.
+            </div>
           ) : (
             <MapPanel
               lat={state.lat}
@@ -135,7 +162,7 @@ function App() {
           )}
         </section>
 
-        <DetailPanel signal={selectedSignal} timeseries={selectedSeries} events={events} />
+        <DetailPanel signal={selectedSignal} timeseries={selectedSeries} events={relatedEvents} />
       </main>
     </div>
   );

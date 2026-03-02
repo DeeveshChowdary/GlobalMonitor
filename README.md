@@ -90,6 +90,12 @@ The app runs without keys by default.
 - **Optional keys**:
   - `FRED_API_KEY` can improve reliability under higher request volume.
 
+### Degraded Behavior When Sources Fail
+
+- If a source is temporarily unavailable, API routes return cached stale data when available.
+- If no cached payload exists, that source contributes empty data while other sources continue to render.
+- This means a module can still load partially (for example, signals present but fewer events) rather than hard-failing the whole dashboard.
+
 ## Getting Started (Local)
 
 ### 1. Install dependencies
@@ -222,9 +228,28 @@ Placeholder folder: [`docs/screenshots`](/Users/deeveshchowdary/Desktop/github_p
 
 Add screenshots after first local run.
 
-## Limitations (Current MVP)
+## Troubleshooting
+
+- `pnpm` not found:
+  - Install pnpm first (`npm i -g pnpm`) or use Corepack on Node versions that include it.
+- Upstream feeds look empty:
+  - Check network egress from your runtime.
+  - Retry after cache TTL; temporary source outages are expected on free feeds.
+- FRED data errors:
+  - Keyless mode can be rate-limited; set `FRED_API_KEY` in `.env` for better reliability.
+- Frontend cannot reach API:
+  - Confirm worker is running on `127.0.0.1:8787` in local mode.
+  - In deployed mode, set `VITE_API_BASE_URL` to your deployed worker URL.
+- No map tiles:
+  - Verify the runtime can access MapLibre style URL (`https://demotiles.maplibre.org/style.json`).
+
+## Limitations and Next Iteration
 
 - Capital flow signals are proxies, not direct institutional flow datasets.
 - Choropleth is coarse region-based (not full country polygon fidelity yet).
 - Feed/API availability depends on upstream public endpoints and rate limits.
 - No paid/private datasets included by default.
+- Next iteration:
+  - Add country-level polygons and per-country scoring joins.
+  - Add historical backfill persistence for all feeds (KV/R2/postgres option).
+  - Add regression tests for URL-state round-trip and API caching headers.

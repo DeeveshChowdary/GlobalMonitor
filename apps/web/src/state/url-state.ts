@@ -15,7 +15,9 @@ export type UrlState = {
   setState: (next: Partial<UrlState>) => void;
 };
 
-const defaults = {
+export type UrlSnapshot = Omit<UrlState, 'setState'>;
+
+export const defaultUrlSnapshot: UrlSnapshot = {
   module: 'global-risk' as ModuleId,
   timeRange: '7d' as TimeRange,
   layers: moduleRegistry['global-risk'].defaultLayers,
@@ -30,13 +32,13 @@ const parseNumber = (raw: string | null, fallback: number) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
-const parseStateFromUrl = (): Omit<UrlState, 'setState'> => {
-  const params = new URLSearchParams(window.location.search);
-  const module = params.get('module') ?? defaults.module;
-  const timeRange = params.get('timeRange') ?? defaults.timeRange;
+export const parseUrlStateFromSearch = (search: string): UrlSnapshot => {
+  const params = new URLSearchParams(search);
+  const module = params.get('module') ?? defaultUrlSnapshot.module;
+  const timeRange = params.get('timeRange') ?? defaultUrlSnapshot.timeRange;
 
-  const parsedModule = isModuleId(module) ? module : defaults.module;
-  const parsedTimeRange = isTimeRange(timeRange) ? timeRange : defaults.timeRange;
+  const parsedModule = isModuleId(module) ? module : defaultUrlSnapshot.module;
+  const parsedTimeRange = isTimeRange(timeRange) ? timeRange : defaultUrlSnapshot.timeRange;
 
   return {
     module: parsedModule,
@@ -47,15 +49,15 @@ const parseStateFromUrl = (): Omit<UrlState, 'setState'> => {
         ?.split(',')
         .map((value) => value.trim())
         .filter(Boolean) ?? moduleRegistry[parsedModule].defaultLayers,
-    lat: parseNumber(params.get('lat'), defaults.lat),
-    lon: parseNumber(params.get('lon'), defaults.lon),
-    zoom: parseNumber(params.get('zoom'), defaults.zoom),
-    view: params.get('view') ?? defaults.view,
+    lat: parseNumber(params.get('lat'), defaultUrlSnapshot.lat),
+    lon: parseNumber(params.get('lon'), defaultUrlSnapshot.lon),
+    zoom: parseNumber(params.get('zoom'), defaultUrlSnapshot.zoom),
+    view: params.get('view') ?? defaultUrlSnapshot.view,
     selectedSignalId: params.get('selectedSignalId') ?? undefined
   };
 };
 
-const serializeState = (state: Omit<UrlState, 'setState'>) => {
+export const serializeUrlStateToSearch = (state: UrlSnapshot) => {
   const params = new URLSearchParams();
   params.set('module', state.module);
   params.set('timeRange', state.timeRange);
@@ -67,8 +69,15 @@ const serializeState = (state: Omit<UrlState, 'setState'>) => {
   if (state.selectedSignalId) {
     params.set('selectedSignalId', state.selectedSignalId);
   }
+  return params.toString();
+};
 
-  const nextUrl = `${window.location.pathname}?${params.toString()}`;
+const parseStateFromUrl = (): UrlSnapshot =>
+  parseUrlStateFromSearch(window.location.search);
+
+const serializeState = (state: UrlSnapshot) => {
+  const search = serializeUrlStateToSearch(state);
+  const nextUrl = `${window.location.pathname}?${search}`;
   window.history.replaceState(null, '', nextUrl);
 };
 

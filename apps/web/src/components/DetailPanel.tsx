@@ -32,13 +32,17 @@ export const DetailPanel = ({ signal, timeseries, events }: Props) => {
 
       <div className="events-list">
         <h3>What Changed</h3>
-        {events.slice(0, 8).map((event) => (
-          <article key={event.id} className="event-item">
-            <strong>{event.title}</strong>
-            <p>{event.summary ?? 'No summary available.'}</p>
-            <small>{new Date(event.timestamp).toLocaleString()}</small>
-          </article>
-        ))}
+        {events.length === 0 ? (
+          <div className="empty">No events in the selected window.</div>
+        ) : (
+          events.slice(0, 8).map((event) => (
+            <article key={event.id} className="event-item">
+              <strong>{event.title}</strong>
+              <p>{event.summary ?? 'No summary available.'}</p>
+              <small>{new Date(event.timestamp).toLocaleString()}</small>
+            </article>
+          ))
+        )}
       </div>
     </section>
   );
