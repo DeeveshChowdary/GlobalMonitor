@@ -13,6 +13,8 @@ The project is designed to run in **degraded mode with zero API keys** and then 
 
 - One cohesive app with module switching and shared URL state.
 - URL-encoded state: `module`, `timeRange`, `layers`, `lat`, `lon`, `zoom`, `view`, `selectedSignalId`.
+- Dark "war-room" UI shell with high-contrast tactical map overlays.
+- Dense monitor layout: signal sparklines, KPI strip, multi-metric chart stack, event intensity timeline.
 - Normalized domain model:
   - `Signal` (ranked alerts)
   - `Timeseries` (chart metrics)
@@ -97,6 +99,7 @@ The app runs without keys by default.
 
 - If a source is temporarily unavailable, API routes return cached stale data when available.
 - If no cached payload exists, that source contributes empty data while other sources continue to render.
+- Frontend also uses retry + timeout + fallback API-base logic and deterministic offline monitor stubs to avoid blank-screen startup failures.
 - This means a module can still load partially (for example, signals present but fewer events) rather than hard-failing the whole dashboard.
 
 ## Getting Started (Local)
@@ -244,6 +247,8 @@ Live deployment screenshot:
 
 ![Deployed Global Risk](docs/screenshots/deployed-global-risk.png)
 
+Note: UI has been updated to a dark war-room style; refresh screenshots from current `main` for exact visual parity.
+
 ## Troubleshooting
 
 - `pnpm` not found:
@@ -255,9 +260,10 @@ Live deployment screenshot:
   - Keyless mode can be rate-limited; set `FRED_API_KEY` in `.env` for better reliability.
 - Frontend cannot reach API:
   - Confirm worker is running on `127.0.0.1:8787` in local mode.
-  - In deployed mode, set `VITE_API_BASE_URL` to your deployed worker URL.
+  - In deployed mode, set `VITE_API_BASE_URL` to your deployed worker URL (comma-separated base URLs supported).
+  - If API is temporarily unreachable, the app should switch to degraded fallback monitors rather than blanking.
 - No map tiles:
-  - Verify the runtime can access MapLibre style URL (`https://demotiles.maplibre.org/style.json`).
+  - Verify runtime egress to CARTO raster tiles (`https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png`).
 
 ## Limitations and Next Iteration
 

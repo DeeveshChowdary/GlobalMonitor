@@ -283,7 +283,8 @@ export const getCapitalFlowEvents = async (
     const previous = metric.points[metric.points.length - 2];
     const changePct = ((latest.value - previous.value) / (previous.value || 1)) * 100;
 
-    if (Math.abs(changePct) < 2) {
+    const threshold = metric.metricId.includes('stablecoin') ? 0.35 : 0.9;
+    if (Math.abs(changePct) < threshold) {
       continue;
     }
 
@@ -297,6 +298,28 @@ export const getCapitalFlowEvents = async (
       tags: ['market-move'],
       severity: Math.min(95, Math.abs(changePct) * 6)
     });
+  }
+
+  if (events.length === 0) {
+    const snapshots = ranged
+      .filter((metric) => metric.points.length >= 2)
+      .slice(0, 3)
+      .map((metric) => {
+        const latest = metric.points[metric.points.length - 1];
+        const previous = metric.points[metric.points.length - 2];
+        const changePct = ((latest.value - previous.value) / (previous.value || 1)) * 100;
+        return {
+          id: `capital-flows:${metric.metricId}:snapshot:${latest.timestamp}`,
+          module: 'capital-flows' as const,
+          title: `${metric.label} snapshot ${changePct >= 0 ? '+' : ''}${changePct.toFixed(2)}%`,
+          summary: 'Quiet regime: fallback snapshot event to keep feed context active.',
+          timestamp: latest.timestamp,
+          source: metric.source,
+          tags: ['snapshot', 'market-move'],
+          severity: Math.min(55, Math.abs(changePct) * 5 + 15)
+        };
+      });
+    events.push(...snapshots);
   }
 
   return events.sort((left, right) => right.timestamp.localeCompare(left.timestamp));
