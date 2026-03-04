@@ -1,87 +1,41 @@
-# Remaining Work TODO
+# Recovery TODO
 
-Last updated: 2026-03-02 (America/New_York)
+Last updated: 2026-03-03 (America/New_York)
 
 Status legend:
 
 - `[ ]` pending
 - `[~]` in progress
 - `[x]` done
-- `[-]` blocked (external dependency/environment)
+- `[-]` blocked
 
-Overall remaining scope: **0 tasks**
+Overall remaining scope: **16 tasks**
 
-## 1) Environment and Tooling Validation
+## 1) Stability Hotfix (failed fetch / empty monitors)
 
-- [x] Install workspace dependencies with `pnpm install`.
-- [x] Generate and commit `pnpm-lock.yaml`.
-- [x] Confirm `pnpm dev` runs both web and api concurrently.
-- [x] Confirm worker local runtime starts on `127.0.0.1:8787`.
-- [x] Confirm web dev server starts on `127.0.0.1:5173`.
-- [x] Verify root scripts execute successfully: `dev`, `build`, `lint`, `typecheck`, `test`, `format`.
+- [~] Reproduce `failed to fetch` locally with real runtime (`pnpm dev`) and endpoint probes.
+- [ ] Add frontend API retry + timeout + fallback base URL strategy for deployed Pages setups.
+- [ ] Change dashboard loading to partial success (`Promise.allSettled`) so one endpoint failure does not blank entire UI.
+- [ ] Add user-visible degraded mode status strip with source health notes instead of generic hard errors.
+- [ ] Harden AI/RSS source aggregation so one feed outage cannot fail module payload generation.
 
-## 2) Quality Gates and Fixes
+## 2) Data Density (more monitors + more graphs)
 
-- [x] Run `pnpm lint` across all workspaces.
-- [x] Fix any ESLint violations found.
-- [x] Run `pnpm typecheck` across all workspaces.
-- [x] Fix any TypeScript type errors found.
-- [x] Run `pnpm test` and confirm scoring tests pass.
-- [x] Add at least one cache behavior test (coalescing or stale fallback).
-- [x] Add at least one API contract test (schema envelope validation).
+- [ ] Add multi-chart panel (primary + secondary metrics for selected module).
+- [ ] Add compact sparkline rows for top signals in the left panel.
+- [ ] Add top KPI cards (global score, average severity, event velocity, source count).
+- [ ] Add timeline section that visualizes event intensity over the current range.
 
-## 3) API Functional Verification
+## 3) UI Redesign (dark hacker / war-room)
 
-- [x] Smoke-test `GET /api/health`.
-- [x] Smoke-test `GET /api/signals` for all 4 modules.
-- [x] Smoke-test `GET /api/events` for all 4 modules.
-- [x] Smoke-test `GET /api/timeseries` for all 4 modules.
-- [x] Verify `module` and `timeRange` query validation rejects bad inputs.
-- [x] Verify `ETag` and `Cache-Control` headers are returned on API endpoints.
-- [x] Verify conditional request with `If-None-Match` returns `304`.
-- [x] Verify stale cache fallback behavior when an upstream source fails.
+- [ ] Replace current light theme with dark tactical palette + neon accents.
+- [ ] Upgrade map presentation to dark basemap and tuned overlays for high contrast.
+- [ ] Redesign shell typography/spacing/borders to look like a cyber operations console.
+- [ ] Improve responsive behavior so dense panels remain usable on laptop and mobile widths.
 
-## 4) Data and Scoring Validation
+## 4) Verification + Docs
 
-- [x] Confirm Financial Stress returns non-empty data from free FRED endpoints in keyless mode.
-- [x] Confirm AI & Tech events populate from arXiv + GitHub feed sources.
-- [x] Confirm Capital Flows data populates from CoinGecko.
-- [x] Verify derived metrics are present: `yield-spread`, `stablecoin-total-market-cap`, `btc-volatility-proxy`.
-- [x] Validate deterministic ranking order: `score = severity*0.7 + acceleration*0.3`.
-- [x] Validate global-risk blended score stays in 0-100 range across ranges.
-- [x] Add a short README note with expected degraded behavior when a feed is unavailable.
-
-## 5) Frontend UX and URL-State Verification
-
-- [x] Verify module switching preserves map/time/layer URL state.
-- [x] Verify full URL round-trip recreates identical view after page reload.
-- [x] Verify `selectedSignalId` deep-linking works when opening shared links.
-- [x] Verify layer toggles (`choropleth`, `signals`, `events`) reflect in URL and map visibility.
-- [x] Verify responsive layout behavior on mobile breakpoint. (verified in CSS media breakpoints at 1180px and 860px)
-- [x] Verify selected signal details always show matching chart + related events.
-- [x] Add explicit loading/empty-state copy for each panel path.
-
-## 6) Deployment Rehearsal
-
-- [x] Dry-run Cloudflare Worker deployment with Wrangler.
-- [x] Confirm production API URL works for all endpoints.
-- [x] Build web for production and verify API base URL wiring with `VITE_API_BASE_URL`.
-- [x] Deploy web (Cloudflare Pages or equivalent free host) and verify live app end-to-end.
-- [x] Document final deployed URLs in README.
-
-## 7) Docs and Handoff Completion
-
-- [x] Capture and add real screenshots to `docs/screenshots`.
-- [x] Update README screenshot section to embed actual images.
-- [x] Add a concise troubleshooting section (feed failure, rate limit, CORS, missing env vars).
-- [x] Add a "known limitations" section with concrete next iteration items.
-- [x] Create a short CHANGELOG entry for the current MVP baseline.
-
-## 8) Git Hygiene and Delivery
-
-- [x] Push current commits to remote `main`.
-- [x] Open a PR-style summary in README or CHANGELOG covering architecture and MVP boundaries.
-
-## Update Rule (tracking commitment)
-
-- [x] After each completed task above, immediately update this file status and remaining count.
+- [ ] Run full quality gates (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`) and fix regressions.
+- [ ] Manually verify each module loads non-empty data in local runtime with no API keys.
+- [ ] Update README screenshots + troubleshooting for new fallback behavior and dark UI.
+- [ ] Push commits for each completed work chunk and keep this TODO updated after each chunk.
