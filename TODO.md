@@ -9,7 +9,7 @@ Status legend:
 - `[x]` done
 - `[-]` blocked
 
-Overall remaining scope: **1 task**
+Overall remaining scope: **0 tasks**
 
 ## 1) Stability Hotfix (failed fetch / empty monitors)
 
@@ -38,4 +38,4 @@ Overall remaining scope: **1 task**
 - [x] Run full quality gates (`pnpm lint`, `pnpm typecheck`, `pnpm test`, `pnpm build`) and fix regressions.
 - [x] Manually verify each module loads non-empty data in local runtime with no API keys.
 - [x] Update README screenshots + troubleshooting for new fallback behavior and dark UI.
-- [ ] Push commits for each completed work chunk and keep this TODO updated after each chunk.
+- [x] Push commits for each completed work chunk and keep this TODO updated after each chunk.
