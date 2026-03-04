@@ -4,48 +4,77 @@ import { moduleList } from '../config/modules';
 type Props = {
   module: ModuleId;
   timeRange: TimeRange;
+  summary: {
+    signalCount: number;
+    eventCount: number;
+    score: number;
+    degraded: boolean;
+  };
   onModuleChange: (module: ModuleId) => void;
   onTimeRangeChange: (timeRange: TimeRange) => void;
 };
 
 const ranges: TimeRange[] = ['24h', '7d', '30d', '90d'];
 
-export const TopNav = ({ module, timeRange, onModuleChange, onTimeRangeChange }: Props) => {
+export const TopNav = ({
+  module,
+  timeRange,
+  summary,
+  onModuleChange,
+  onTimeRangeChange
+}: Props) => {
   return (
     <header className="top-nav">
       <div className="brand">
-        <h1>Global Monitor</h1>
-        <p>Free-first risk dashboard</p>
+        <h1>GLOBAL MONITOR OPS</h1>
+        <p>{summary.degraded ? 'DEGRADED DATA PATH ACTIVE' : 'LIVE FEED MATRIX ACTIVE'}</p>
       </div>
 
-      <div className="control-group">
-        <label htmlFor="module-switcher">Module</label>
-        <select
-          id="module-switcher"
-          value={module}
-          onChange={(event) => onModuleChange(event.target.value as ModuleId)}
-        >
+      <div className="button-switcher">
+        <label>Module</label>
+        <div className="switcher-row">
           {moduleList.map((config) => (
-            <option key={config.id} value={config.id}>
+            <button
+              key={config.id}
+              type="button"
+              className={`switcher-btn ${module === config.id ? 'active' : ''}`}
+              onClick={() => onModuleChange(config.id)}
+            >
               {config.label}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
       </div>
 
-      <div className="control-group">
-        <label htmlFor="time-range">Time Range</label>
-        <select
-          id="time-range"
-          value={timeRange}
-          onChange={(event) => onTimeRangeChange(event.target.value as TimeRange)}
-        >
+      <div className="button-switcher">
+        <label>Time Range</label>
+        <div className="switcher-row">
           {ranges.map((range) => (
-            <option key={range} value={range}>
+            <button
+              key={range}
+              type="button"
+              className={`switcher-btn ${timeRange === range ? 'active' : ''}`}
+              onClick={() => onTimeRangeChange(range)}
+            >
               {range}
-            </option>
+            </button>
           ))}
-        </select>
+        </div>
+      </div>
+
+      <div className="nav-kpis">
+        <div>
+          <small>Score</small>
+          <strong>{summary.score.toFixed(1)}</strong>
+        </div>
+        <div>
+          <small>Signals</small>
+          <strong>{summary.signalCount}</strong>
+        </div>
+        <div>
+          <small>Events</small>
+          <strong>{summary.eventCount}</strong>
+        </div>
       </div>
     </header>
   );

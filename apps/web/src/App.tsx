@@ -171,6 +171,12 @@ function App() {
       <TopNav
         module={state.module}
         timeRange={state.timeRange}
+        summary={{
+          score: selectedSignal?.score ?? 0,
+          signalCount: signals.length,
+          eventCount: events.length,
+          degraded: statusNotes.length > 0
+        }}
         onModuleChange={(module: ModuleId) => {
           state.setState({ module, selectedSignalId: undefined });
         }}

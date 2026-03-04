@@ -13,7 +13,22 @@ type Props = {
   onViewportChange: (next: { lat: number; lon: number; zoom: number }) => void;
 };
 
-const mapStyle = 'https://demotiles.maplibre.org/style.json';
+const mapStyle = {
+  version: 8,
+  sources: {
+    'carto-dark': {
+      type: 'raster',
+      tiles: [
+        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
+        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+      ],
+      tileSize: 256,
+      attribution: '&copy; OpenStreetMap contributors, &copy; CARTO'
+    }
+  },
+  layers: [{ id: 'carto-dark-layer', type: 'raster', source: 'carto-dark' }]
+} as const;
 
 const setLayerVisibility = (map: MapLibreMap, id: string, visibility: 'visible' | 'none') => {
   if (map.getLayer(id)) {
@@ -102,7 +117,7 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
 
     const map = new maplibregl.Map({
       container: containerRef.current,
-      style: mapStyle,
+      style: mapStyle as any,
       center: [lon, lat],
       zoom
     });
@@ -125,15 +140,15 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
             ['linear'],
             ['get', 'riskScore'],
             0,
-            '#def5f0',
+            'rgba(70, 104, 133, 0.18)',
             35,
-            '#8fd3c1',
+            'rgba(78, 183, 255, 0.32)',
             60,
-            '#ffb367',
+            'rgba(255, 190, 84, 0.42)',
             85,
-            '#ef476f'
+            'rgba(255, 63, 96, 0.55)'
           ],
-          'fill-opacity': 0.35
+          'fill-opacity': 0.8
         }
       });
 
@@ -142,8 +157,8 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
         type: 'line',
         source: 'risk-choropleth',
         paint: {
-          'line-color': '#234',
-          'line-opacity': 0.2,
+          'line-color': '#87a9c2',
+          'line-opacity': 0.25,
           'line-width': 1
         }
       });
@@ -168,9 +183,9 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
         source: 'signal-markers',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#1f6feb',
-          'circle-radius': ['step', ['get', 'point_count'], 13, 10, 17, 20, 21],
-          'circle-opacity': 0.7
+          'circle-color': '#1ec8ff',
+          'circle-radius': ['step', ['get', 'point_count'], 14, 10, 18, 20, 22],
+          'circle-opacity': 0.8
         }
       });
 
@@ -185,15 +200,15 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
             ['linear'],
             ['get', 'severity'],
             0,
-            '#2a9d8f',
+            '#00c58d',
             50,
-            '#f4a261',
+            '#ffbf69',
             100,
-            '#e63946'
+            '#ff2f6c'
           ],
-          'circle-radius': 6,
-          'circle-stroke-width': 1,
-          'circle-stroke-color': '#0f172a'
+          'circle-radius': 6.5,
+          'circle-stroke-width': 1.2,
+          'circle-stroke-color': '#0a1018'
         }
       });
 
@@ -203,9 +218,9 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
         source: 'event-markers',
         filter: ['has', 'point_count'],
         paint: {
-          'circle-color': '#6c757d',
+          'circle-color': '#64748b',
           'circle-radius': ['step', ['get', 'point_count'], 10, 12, 14, 20, 18],
-          'circle-opacity': 0.5
+          'circle-opacity': 0.65
         }
       });
 
@@ -215,8 +230,8 @@ export const MapPanel = ({ lat, lon, zoom, layers, signals, events, onViewportCh
         source: 'event-markers',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-color': '#9aa5b1',
-          'circle-radius': 4,
+          'circle-color': '#a6b8c8',
+          'circle-radius': 4.2,
           'circle-opacity': 0.8
         }
       });

@@ -9,7 +9,7 @@ Status legend:
 - `[x]` done
 - `[-]` blocked
 
-Overall remaining scope: **7 tasks**
+Overall remaining scope: **4 tasks**
 
 ## 1) Stability Hotfix (failed fetch / empty monitors)
 
@@ -28,10 +28,10 @@ Overall remaining scope: **7 tasks**
 
 ## 3) UI Redesign (dark hacker / war-room)
 
-- [ ] Replace current light theme with dark tactical palette + neon accents.
-- [ ] Upgrade map presentation to dark basemap and tuned overlays for high contrast.
-- [ ] Redesign shell typography/spacing/borders to look like a cyber operations console.
-- [ ] Improve responsive behavior so dense panels remain usable on laptop and mobile widths.
+- [x] Replace current light theme with dark tactical palette + neon accents.
+- [x] Upgrade map presentation to dark basemap and tuned overlays for high contrast.
+- [x] Redesign shell typography/spacing/borders to look like a cyber operations console.
+- [x] Improve responsive behavior so dense panels remain usable on laptop and mobile widths.
 
 ## 4) Verification + Docs
 
