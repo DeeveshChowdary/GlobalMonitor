@@ -187,6 +187,7 @@ function App() {
       <main className="content-grid">
         <SignalList
           signals={signals}
+          timeseries={timeseries}
           selectedSignalId={selectedSignal?.id}
           onSelect={(signal) => state.setState({ selectedSignalId: signal.id })}
         />
@@ -228,7 +229,13 @@ function App() {
           )}
         </section>
 
-        <DetailPanel signal={selectedSignal} timeseries={selectedSeries} events={relatedEvents} />
+        <DetailPanel
+          moduleLabel={moduleConfig.label}
+          signal={selectedSignal}
+          timeseries={selectedSeries}
+          allTimeseries={timeseries}
+          events={relatedEvents}
+        />
       </main>
       {error ? <div className="error-banner">{error}</div> : null}
     </div>

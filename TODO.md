@@ -9,7 +9,7 @@ Status legend:
 - `[x]` done
 - `[-]` blocked
 
-Overall remaining scope: **11 tasks**
+Overall remaining scope: **7 tasks**
 
 ## 1) Stability Hotfix (failed fetch / empty monitors)
 
@@ -21,10 +21,10 @@ Overall remaining scope: **11 tasks**
 
 ## 2) Data Density (more monitors + more graphs)
 
-- [ ] Add multi-chart panel (primary + secondary metrics for selected module).
-- [ ] Add compact sparkline rows for top signals in the left panel.
-- [ ] Add top KPI cards (global score, average severity, event velocity, source count).
-- [ ] Add timeline section that visualizes event intensity over the current range.
+- [x] Add multi-chart panel (primary + secondary metrics for selected module).
+- [x] Add compact sparkline rows for top signals in the left panel.
+- [x] Add top KPI cards (global score, average severity, event velocity, source count).
+- [x] Add timeline section that visualizes event intensity over the current range.
 
 ## 3) UI Redesign (dark hacker / war-room)
 

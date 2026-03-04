@@ -1,12 +1,16 @@
-import type { Signal } from '@gm/schema';
+import type { Signal, Timeseries } from '@gm/schema';
+import { TimeSeriesChart } from './TimeSeriesChart';
 
 type Props = {
   signals: Signal[];
+  timeseries: Timeseries[];
   selectedSignalId?: string;
   onSelect: (signal: Signal) => void;
 };
 
-export const SignalList = ({ signals, selectedSignalId, onSelect }: Props) => {
+export const SignalList = ({ signals, timeseries, selectedSignalId, onSelect }: Props) => {
+  const byMetric = new Map(timeseries.map((series) => [series.metricId, series]));
+
   return (
     <section className="panel signals-panel">
       <div className="panel-header">
@@ -38,6 +42,13 @@ export const SignalList = ({ signals, selectedSignalId, onSelect }: Props) => {
                 </span>
                 <span className="badge">A {signal.acceleration.toFixed(1)}</span>
                 <span className="badge">C {signal.confidence.toFixed(0)}</span>
+              </div>
+              <div className="signal-subline">
+                <span>{signal.region ?? 'Global'}</span>
+                <span>{signal.tags.slice(0, 2).join(' • ') || 'monitor'}</span>
+              </div>
+              <div className="signal-spark">
+                <TimeSeriesChart series={byMetric.get(signal.metricIds[0])} compact />
               </div>
             </button>
           ))}
