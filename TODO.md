@@ -9,15 +9,15 @@ Status legend:
 - `[x]` done
 - `[-]` blocked
 
-Overall remaining scope: **16 tasks**
+Overall remaining scope: **11 tasks**
 
 ## 1) Stability Hotfix (failed fetch / empty monitors)
 
-- [~] Reproduce `failed to fetch` locally with real runtime (`pnpm dev`) and endpoint probes.
-- [ ] Add frontend API retry + timeout + fallback base URL strategy for deployed Pages setups.
-- [ ] Change dashboard loading to partial success (`Promise.allSettled`) so one endpoint failure does not blank entire UI.
-- [ ] Add user-visible degraded mode status strip with source health notes instead of generic hard errors.
-- [ ] Harden AI/RSS source aggregation so one feed outage cannot fail module payload generation.
+- [x] Reproduce `failed to fetch` locally with real runtime (`pnpm dev`) and endpoint probes.
+- [x] Add frontend API retry + timeout + fallback base URL strategy for deployed Pages setups.
+- [x] Change dashboard loading to partial success (`Promise.allSettled`) so one endpoint failure does not blank entire UI.
+- [x] Add user-visible degraded mode status strip with source health notes instead of generic hard errors.
+- [x] Harden AI/RSS source aggregation so one feed outage cannot fail module payload generation.
 
 ## 2) Data Density (more monitors + more graphs)
 

@@ -58,7 +58,7 @@ const createCountSeries = (
 };
 
 export const getFinancialTimeseries = async (env: SourceEnv) => {
-  const baseSeries = await Promise.all([
+  const settled = await Promise.allSettled([
     fetchFredSeries(
       { seriesId: 'DGS10', metricId: 'us10y', label: 'US 10Y Treasury Yield', unit: '%' },
       env.FRED_API_KEY
@@ -86,19 +86,25 @@ export const getFinancialTimeseries = async (env: SourceEnv) => {
     )
   ]);
 
+  const baseSeries = settled
+    .filter((result): result is PromiseFulfilledResult<Timeseries> => result.status === 'fulfilled')
+    .map((result) => result.value);
+
   const byMetric = Object.fromEntries(baseSeries.map((series) => [series.metricId, series]));
   const us10y = byMetric['us10y'];
   const us2y = byMetric['us2y'];
 
-  const alignedLength = Math.min(us10y?.points.length ?? 0, us2y?.points.length ?? 0);
-  const spreadPoints = Array.from({ length: alignedLength }, (_, index) => {
-    const ten = us10y.points[index];
-    const two = us2y.points[index];
-    return {
-      timestamp: ten.timestamp,
-      value: ten.value - two.value
-    };
-  });
+  const spreadPoints =
+    us10y && us2y
+      ? Array.from({ length: Math.min(us10y.points.length, us2y.points.length) }, (_, index) => {
+          const ten = us10y.points[index];
+          const two = us2y.points[index];
+          return {
+            timestamp: ten.timestamp,
+            value: ten.value - two.value
+          };
+        })
+      : [];
 
   const spreadSeries: Timeseries = {
     id: 'financial-stress:yield-spread',
@@ -111,7 +117,7 @@ export const getFinancialTimeseries = async (env: SourceEnv) => {
     tags: ['macro', 'yield-curve']
   };
 
-  return [...baseSeries, spreadSeries];
+  return spreadPoints.length > 0 ? [...baseSeries, spreadSeries] : baseSeries;
 };
 
 export const getFinancialEvents = async (timeRange: TimeRange): Promise<Event[]> => {
@@ -131,7 +137,7 @@ export const getFinancialEvents = async (timeRange: TimeRange): Promise<Event[]>
 };
 
 export const getAiTechEvents = async (timeRange: TimeRange, env: SourceEnv): Promise<Event[]> => {
-  const arxivEventsByFeed = await Promise.all(
+  const arxivSettled = await Promise.allSettled(
     ARXIV_FEEDS.map((feed) =>
       fetchFeedEvents({
         module: 'ai-tech',
@@ -142,12 +148,15 @@ export const getAiTechEvents = async (timeRange: TimeRange, env: SourceEnv): Pro
       })
     )
   );
+  const arxivEventsByFeed = arxivSettled
+    .filter((result): result is PromiseFulfilledResult<Event[]> => result.status === 'fulfilled')
+    .map((result) => result.value);
 
   const repoConfig =
     env.GITHUB_RELEASE_REPOS?.split(',')
       .map((value) => value.trim())
       .filter(Boolean) ?? DEFAULT_GITHUB_RELEASE_REPOS;
-  const githubEventsByRepo = await Promise.all(
+  const githubSettled = await Promise.allSettled(
     repoConfig.map((repo) =>
       fetchFeedEvents({
         module: 'ai-tech',
@@ -158,6 +167,9 @@ export const getAiTechEvents = async (timeRange: TimeRange, env: SourceEnv): Pro
       })
     )
   );
+  const githubEventsByRepo = githubSettled
+    .filter((result): result is PromiseFulfilledResult<Event[]> => result.status === 'fulfilled')
+    .map((result) => result.value);
 
   const merged = [...arxivEventsByFeed.flat(), ...githubEventsByRepo.flat()]
     .sort((left, right) => right.timestamp.localeCompare(left.timestamp))
